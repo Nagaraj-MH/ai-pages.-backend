@@ -7,10 +7,12 @@ import (
 	"log"
 	"os"
 
+
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	fmt.Println(os.Getenv("DATABASE_URL"))
 	database.ConnectDB()
 
 	router := gin.Default()
