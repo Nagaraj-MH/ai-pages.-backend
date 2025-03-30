@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	log.Println(os.Getenv("DATABASE_URL"))
 	database.ConnectDB()
 
 	router := gin.Default()
