@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	os.Setenv("DATABASE_URL", "postgres://avnadmin:AVNS_h838AM4ym48oGQAHCBi@pg-3ce0a6e1-superusxr-b8ec.g.aivencloud.com:20039/defaultdb?sslmode=require")
 	log.Println(os.Getenv("DATABASE_URL"))
 	database.ConnectDB()
 
