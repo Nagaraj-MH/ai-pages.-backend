@@ -5,6 +5,7 @@ import (
 	"bookstore/database"
 	"bookstore/models"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -85,17 +86,43 @@ func TestLogin(t *testing.T) {
 	assert.Contains(t, response, "token") 
 }
 
+
 func TestUploadBook(t *testing.T) {
 	setupTestDB()
 	router := setupRouter()
 
-	book := `{"title": "Deep Learning", "author": "Ian Goodfellow", "cover_image": "cover.jpg", "content": "Deep Learning explained..."}`
-	req, _ := http.NewRequest("POST", "/books/upload", bytes.NewBuffer([]byte(book)))
+	// Simulated binary data for CoverImage and PDFData
+	coverImageData := []byte{0x89, 0x50, 0x4E, 0x47} // PNG file signature
+	pdfData := []byte("%PDF-1.4 Sample PDF content")
+
+	// Encode binary data as base64 strings for JSON
+	encodedCoverImage := base64.StdEncoding.EncodeToString(coverImageData)
+	encodedPDFData := base64.StdEncoding.EncodeToString(pdfData)
+
+	// Create book struct
+	book := map[string]interface{}{
+		"title":       "Deep Learning",
+		"author":      "Ian Goodfellow",
+		"cover_image": encodedCoverImage,
+		"pdf_data":    encodedPDFData,
+		"likes":       0,
+	}
+
+	// Convert struct to JSON
+	bookJSON, err := json.Marshal(book)
+	if err != nil {
+		t.Fatalf("Failed to marshal book JSON: %v", err)
+	}
+
+	// Create request
+	req, _ := http.NewRequest("POST", "/books/upload", bytes.NewBuffer(bookJSON))
 	req.Header.Set("Content-Type", "application/json")
 
+	// Perform the request
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
+	// Assert HTTP status
 	assert.Equal(t, http.StatusCreated, w.Code)
 }
 

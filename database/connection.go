@@ -3,7 +3,6 @@ package database
 import (
 	"fmt"
 	"log"
-	"os"
 
 	_ "github.com/joho/godotenv/autoload"
 
@@ -16,8 +15,8 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
-	
-	dsn := os.Getenv("DATABASE_URL")
+
+	dsn := "postgres://avnadmin:AVNS_h838AM4ym48oGQAHCBi@pg-3ce0a6e1-superusxr-b8ec.g.aivencloud.com:20039/ai-pages?sslmode=require"
 	if dsn == "" {
 		log.Fatal("DATABASE_URL is not set")
 	}
@@ -29,7 +28,7 @@ func ConnectDB() {
 
 	fmt.Println("Database connected successfully")
 
-	db.AutoMigrate(&models.Book{}, &models.Comment{})
+	db.AutoMigrate(&models.User{}, &models.Book{}, &models.Comment{})
 
 	DB = db
 }

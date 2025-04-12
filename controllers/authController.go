@@ -4,10 +4,14 @@ import (
 	"bookstore/database"
 	"bookstore/models"
 	"bookstore/utils"
-	"net/http"
-	"time"
 	"crypto/rand"
 	"encoding/hex"
+
+	"gorm.io/gorm"
+
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +22,16 @@ func Signup(c *gin.Context) {
 		return
 	}
 
+	var existingUser models.User
+	err := database.DB.Where("email = ?", user.Email).First(&existingUser).Error
+	if err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		return
+	} else if err != gorm.ErrRecordNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
@@ -25,30 +39,38 @@ func Signup(c *gin.Context) {
 	}
 	user.Password = hashedPassword
 
-	database.DB.Create(&user)
+	if err := database.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"message": "User registered"})
 }
 
+// Login
 func Login(c *gin.Context) {
-	var user models.User
-	var input models.User
-
+	var input struct {
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	result := database.DB.Where("email = ?", input.Email).First(&user)
-	if result.Error != nil {
+	var user models.User
+	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
+	// Debug password comparison
 	if !utils.CheckPasswordHash(input.Password, user.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
+	// Generate JWT token
 	token, err := utils.GenerateJWT(user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -57,6 +79,7 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
+
 // Reset Password
 func ResetPassword(c *gin.Context) {
 	var request struct {
@@ -128,4 +151,3 @@ func ForgotPassword(c *gin.Context) {
 	//Send reset email with the token (Using email)
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset link sent to email", "token": user.ResetToken})
 }
-
