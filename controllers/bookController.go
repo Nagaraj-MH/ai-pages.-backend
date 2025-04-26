@@ -3,78 +3,82 @@ package controllers
 import (
 	"bookstore/database"
 	"bookstore/models"
-	"encoding/base64"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Upload a new book
+// controllers/books.go
 func UploadBook(c *gin.Context) {
-	var bookInput struct {
-		Title      string `json:"title"`
-		Author     string `json:"author"`
-		CoverImage string `json:"cover_image"`
-		PDFData    string `json:"pdf_data"`
-		Likes      int    `json:"likes"`
-	}
-
-	// Bind JSON
-	if err := c.ShouldBindJSON(&bookInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid book data"})
-		return
-	}
-
-	// Decode base64 CoverImage
-	coverImageData, err := base64.StdEncoding.DecodeString(bookInput.CoverImage)
+	title := c.PostForm("title")
+	author := c.PostForm("author")
+	// Handle Cover Image File
+	coverFileHeader, err := c.FormFile("coverImageFile")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cover image data"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cover image file is required"})
 		return
 	}
-
-	// Decode base64 PDFData
-	pdfData, err := base64.StdEncoding.DecodeString(bookInput.PDFData)
+	coverFile, err := coverFileHeader.Open()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid PDF data"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open cover image"})
+		return
+	}
+	defer coverFile.Close()
+	coverImageData, err := io.ReadAll(coverFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read cover image"})
 		return
 	}
 
-	// Create book model instance
+	// Handle PDF File (similar logic)
+	pdfFileHeader, err := c.FormFile("pdfFile")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "PDF file is required"})
+		return
+	}
+	pdfFile, err := pdfFileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open PDF file"})
+		return
+	}
+	defer pdfFile.Close()
+	pdfData, err := io.ReadAll(pdfFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read PDF file"})
+		return
+	}
+
 	book := models.Book{
-		Title:      bookInput.Title,
-		Author:     bookInput.Author,
+		Title:      title,
+		Author:     author,
 		CoverImage: coverImageData,
 		PDFData:    pdfData,
-		Likes:      bookInput.Likes,
 	}
 
-	// Save to database
-	database.DB.Create(&book)
-	c.JSON(http.StatusCreated, gin.H{"message": "Book uploaded successfully", "book": book})
-}
+	if err := database.DB.Create(&book).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save book"})
+		return
+	}
 
-// Fetch all books
+	c.JSON(http.StatusCreated, gin.H{"message": "Book uploaded successfully via multipart", "book_id": book.ID})
+}
 func GetBooks(c *gin.Context) {
 	var books []models.Book
 	database.DB.Find(&books)
 
-	// Convert binary fields to base64 for JSON response
 	var responseBooks []map[string]interface{}
 	for _, book := range books {
 		responseBooks = append(responseBooks, map[string]interface{}{
-			"id":         book.ID,
-			"title":      book.Title,
-			"author":     book.Author,
-			"cover_image": base64.StdEncoding.EncodeToString(book.CoverImage),
-			"pdf_data":    base64.StdEncoding.EncodeToString(book.PDFData),
-			"likes":      book.Likes,
+			"id":     book.ID,
+			"title":  book.Title,
+			"author": book.Author,
+			"likes":  book.Likes,
 		})
 	}
 
 	c.JSON(http.StatusOK, responseBooks)
 }
-
-// Like a book
 func LikeBook(c *gin.Context) {
 	bookID := c.Param("id")
 	var book models.Book
@@ -90,22 +94,74 @@ func LikeBook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Book liked", "likes": book.Likes})
 }
 
-// Get book content
 func GetBookContent(c *gin.Context) {
+	type CommentResponse struct {
+		ID     uint   `json:"id"`
+		UserID uint   `json:"userId"`
+		Text   string `json:"text"`
+	}
 	bookID := c.Param("id")
 	var book models.Book
+	var comments []models.Comment
 
-	// Fetch book by ID
 	if err := database.DB.First(&book, bookID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
 		return
 	}
-
-	// Return only book content with base64 encoding
+	if err := database.DB.Where("book_id = ?", book.ID).Find(&comments).Error; err != nil {
+		comments = []models.Comment{}
+	}
+	responseComments := make([]CommentResponse, 0, len(comments))
+	for _, comment := range comments {
+		responseComments = append(responseComments, CommentResponse{
+			ID:     comment.ID,
+			UserID: comment.UserID,
+			Text:   comment.Content,
+		})
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"title":       book.Title,
-		"author":      book.Author,
-		"cover_image": base64.StdEncoding.EncodeToString(book.CoverImage),
-		"pdf_data":    base64.StdEncoding.EncodeToString(book.PDFData),
+		"title":    book.Title,
+		"author":   book.Author,
+		"likes":    book.Likes,
+		"comments": responseComments,
 	})
+}
+
+func GetBookCover(c *gin.Context) {
+	bookID := c.Param("id")
+	var book models.Book
+
+	if err := database.DB.Select("cover_image").First(&book, bookID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+
+	if len(book.CoverImage) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Cover image not found for this book"})
+		return
+	}
+
+	contentType := http.DetectContentType(book.CoverImage)
+	c.Header("Content-Type", contentType)
+	c.Data(http.StatusOK, contentType, book.CoverImage)
+}
+
+func GetBookPDF(c *gin.Context) {
+	bookID := c.Param("id")
+	var book models.Book
+
+	if err := database.DB.Select("pdf_data", "title").First(&book, bookID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Book not found"})
+		return
+	}
+
+	if len(book.PDFData) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "PDF not found for this book"})
+		return
+	}
+
+	contentType := "application/pdf"
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", "inline; filename=\""+book.Title+".pdf\"")
+	c.Data(http.StatusOK, contentType, book.PDFData)
 }

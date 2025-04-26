@@ -1,0 +1,399 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+		"name": "Bookstore API (Postman v2.1 - File Upload)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"_postman_isSubFolder": true,
+			"item": [
+				{
+					"name": "Signup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"yourpassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/signup",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"signup"
+							]
+						},
+						"description": "Register a new user."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"yourpassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to get an auth token. Manually copy the token from response to {{authToken}} env variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/forgot-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"forgot-password"
+							]
+						},
+						"description": "Request a password reset token."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"<RESET_TOKEN_FROM_FORGOT_PASSWORD>\",\n  \"new_password\": \"newsecurepassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"reset-password"
+							]
+						},
+						"description": "Reset password using the token."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication related endpoints"
+		},
+		{
+			"name": "Books",
+			"_postman_isSubFolder": true,
+			"item": [
+				{
+					"name": "Get All Books",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"books"
+							]
+						},
+						"description": "Retrieve a list of all books."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Book Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/books/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"books",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "<BOOK_ID>",
+									"description": "Replace with actual Book ID"
+								}
+							]
+						},
+						"description": "Retrieve details for a specific book by its ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Book (File/Form-Data)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "My New Book (File Upload)",
+									"type": "text"
+								},
+								{
+									"key": "author",
+									"value": "Author Name",
+									"type": "text"
+								},
+								{
+									"key": "coverImageFile",
+									"type": "file",
+									"src": [] 
+								},
+								{
+									"key": "pdfFile",
+									"type": "file",
+									"src": [] 
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/books/upload_multipart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"books",
+								"upload_multipart" 
+							]
+						},
+						"description": "Upload a new book using multipart/form-data. Requires authentication and a backend endpoint configured to handle file uploads (e.g., /upload_multipart). Select actual files in Postman UI."
+					},
+					"response": []
+				},
+				{
+					"name": "Like Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/books/:id/like",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"books",
+								":id",
+								"like"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "<BOOK_ID>",
+									"description": "Replace with actual Book ID"
+								}
+							]
+						},
+						"description": "Increment the like count for a specific book. Requires authentication."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing books"
+		},
+		{
+			"name": "Comments",
+			"_postman_isSubFolder": true,
+			"item": [
+				{
+					"name": "Add Comment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"book_id\": <BOOK_ID_AS_NUMBER>,  \n  \"user_id\": <USER_ID_AS_NUMBER>, \n  \"content\": \"This is my test comment!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/books/:id/comment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"books",
+								":id",
+								"comment"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "<BOOK_ID>",
+									"description": "Replace with actual Book ID this comment belongs to"
+								}
+							]
+						},
+						"description": "Add a comment to a specific book. Requires authentication. Make sure book_id and user_id in body are numbers."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing comments"
+		},
+		{
+			"name": "Root Login (Likely Test/Error)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"login"
+					]
+				},
+				"description": "This route seems to be defined outside the main API group in main.go. Probably for testing."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "default",
+			"description": "Base URL of your Go server"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "secret",
+			"description": "Authentication token obtained after login"
+		}
+	]
+}
