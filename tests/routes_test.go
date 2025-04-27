@@ -36,12 +36,9 @@ func setupRouter() *gin.Engine {
 		books.POST("/upload", controllers.UploadBook)
 		books.GET("/", controllers.GetBooks)
 		books.POST("/:id/like", controllers.LikeBook)
+		books.POST("/:id/comment", controllers.AddComment)
 	}
-	comments := router.Group("/comments")
-	{
-		comments.POST("/", controllers.AddComment)
-		comments.GET("/:bookID", controllers.GetComments)
-	}
+
 	return router
 }
 
@@ -173,13 +170,3 @@ func TestAddComment(t *testing.T) {
 }
 
 
-func TestGetComments(t *testing.T) {
-	setupTestDB()
-	router := setupRouter()
-
-	req, _ := http.NewRequest("GET", "/comments/1", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-}

@@ -5,12 +5,23 @@ import (
 	"bookstore/models"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 // controllers/books.go
 func UploadBook(c *gin.Context) {
+	tags := c.PostFormArray("tags")
+	for i, tag := range tags {
+		tags[i] = strings.TrimSpace(tag)
+	}
+	cleanedTags := []string{}
+	for _, tag := range tags {
+		if tag != "" {
+			cleanedTags = append(cleanedTags, tag)
+		}
+	}
 	title := c.PostForm("title")
 	author := c.PostForm("author")
 	// Handle Cover Image File
@@ -54,6 +65,7 @@ func UploadBook(c *gin.Context) {
 		Author:     author,
 		CoverImage: coverImageData,
 		PDFData:    pdfData,
+		Tags:       cleanedTags,
 	}
 
 	if err := database.DB.Create(&book).Error; err != nil {
@@ -74,6 +86,7 @@ func GetBooks(c *gin.Context) {
 			"title":  book.Title,
 			"author": book.Author,
 			"likes":  book.Likes,
+			"tags":   book.Tags,
 		})
 	}
 
@@ -164,4 +177,22 @@ func GetBookPDF(c *gin.Context) {
 	c.Header("Content-Type", contentType)
 	c.Header("Content-Disposition", "inline; filename=\""+book.Title+".pdf\"")
 	c.Data(http.StatusOK, contentType, book.PDFData)
+}
+
+func GetFeaturedBooks(c *gin.Context) {
+	var books []models.Book
+	database.DB.Order("likes desc").Limit(3).Find(&books)
+
+	var responseBooks []map[string]interface{}
+	for _, book := range books {
+		responseBooks = append(responseBooks, map[string]interface{}{
+			"id":     book.ID,
+			"title":  book.Title,
+			"author": book.Author,
+			"likes":  book.Likes,
+			"tags":   book.Tags,
+		})
+	}
+
+	c.JSON(http.StatusOK, responseBooks)
 }
