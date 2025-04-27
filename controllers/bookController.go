@@ -12,6 +12,7 @@ import (
 
 // controllers/books.go
 func UploadBook(c *gin.Context) {
+	description := c.PostForm("description")
 	tags := c.PostFormArray("tags")
 	for i, tag := range tags {
 		tags[i] = strings.TrimSpace(tag)
@@ -61,11 +62,12 @@ func UploadBook(c *gin.Context) {
 	}
 
 	book := models.Book{
-		Title:      title,
-		Author:     author,
-		CoverImage: coverImageData,
-		PDFData:    pdfData,
-		Tags:       cleanedTags,
+		Title:       title,
+		Author:      author,
+		CoverImage:  coverImageData,
+		PDFData:     pdfData,
+		Tags:        cleanedTags,
+		Description: description,
 	}
 
 	if err := database.DB.Create(&book).Error; err != nil {
@@ -82,11 +84,12 @@ func GetBooks(c *gin.Context) {
 	var responseBooks []map[string]interface{}
 	for _, book := range books {
 		responseBooks = append(responseBooks, map[string]interface{}{
-			"id":     book.ID,
-			"title":  book.Title,
-			"author": book.Author,
-			"likes":  book.Likes,
-			"tags":   book.Tags,
+			"id":          book.ID,
+			"title":       book.Title,
+			"author":      book.Author,
+			"likes":       book.Likes,
+			"tags":        book.Tags,
+			"description": book.Description,
 		})
 	}
 
@@ -186,11 +189,12 @@ func GetFeaturedBooks(c *gin.Context) {
 	var responseBooks []map[string]interface{}
 	for _, book := range books {
 		responseBooks = append(responseBooks, map[string]interface{}{
-			"id":     book.ID,
-			"title":  book.Title,
-			"author": book.Author,
-			"likes":  book.Likes,
-			"tags":   book.Tags,
+			"id":          book.ID,
+			"title":       book.Title,
+			"author":      book.Author,
+			"likes":       book.Likes,
+			"tags":        book.Tags,
+			"description": book.Description,
 		})
 	}
 
