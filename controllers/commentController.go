@@ -27,7 +27,7 @@ func AddComment(c *gin.Context) {
 	database.DB.Create(&comment)
 	c.JSON(http.StatusCreated, gin.H{"message": "Comment added successfully", "comment": gin.H{
 		"text":       comment.Content,
-		"userId":     comment.UserID,
+		"username":   comment.Username,
 		"created_at": comment.CreatedAt,
 	}})
 }

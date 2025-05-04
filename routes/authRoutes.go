@@ -13,5 +13,7 @@ func AuthRoutes(router *gin.RouterGroup) {
 		auth.POST("/login", controllers.Login)
 		auth.POST("/forgot-password", controllers.ForgotPassword)
 		auth.POST("/reset-password", controllers.ResetPassword)
+		auth.GET("/check-username", controllers.CheckUsername)
+		auth.GET("/getme", controllers.GetMe)
 	}
 }

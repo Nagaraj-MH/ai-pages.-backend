@@ -6,6 +6,7 @@ import (
 	"bookstore/utils"
 	"crypto/rand"
 	"encoding/hex"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -21,7 +22,7 @@ func Signup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-
+	user.Username = strings.ToLower(user.Username)
 	var existingUser models.User
 	err := database.DB.Where("email = ?", user.Email).First(&existingUser).Error
 	if err == nil {
@@ -150,4 +151,38 @@ func ForgotPassword(c *gin.Context) {
 
 	//Send reset email with the token (Using email)
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset link sent to email", "token": user.ResetToken})
+}
+func CheckUsername(c *gin.Context) {
+	username := c.Query("username")
+	username = strings.ToLower(username)
+	var existingUser models.User
+	err := database.DB.Where("username = ?", username).First(&existingUser).Error
+	if err == nil {
+		c.JSON(http.StatusOK, gin.H{"available": false})
+		return
+	} else if err != gorm.ErrRecordNotFound {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"available": true})
+}
+
+func GetMe(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Provide Auth token"})
+		return
+	}
+	email, err := utils.GetUserEmailFromToken(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JWT"})
+		return
+	}
+	var user models.User
+	if err := database.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"username": user.Username, "email": user.Email, "name": user.Name})
+
 }

@@ -112,9 +112,9 @@ func LikeBook(c *gin.Context) {
 
 func GetBookContent(c *gin.Context) {
 	type CommentResponse struct {
-		ID     uint   `json:"id"`
-		UserID uint   `json:"userId"`
-		Text   string `json:"text"`
+		ID       uint   `json:"id"`
+		Username string `json:"username"`
+		Text     string `json:"text"`
 	}
 	bookID := c.Param("id")
 	var book models.Book
@@ -131,7 +131,7 @@ func GetBookContent(c *gin.Context) {
 	for _, comment := range comments {
 		responseComments = append(responseComments, CommentResponse{
 			ID:     comment.ID,
-			UserID: comment.UserID,
+			Username: comment.Username,
 			Text:   comment.Content,
 		})
 	}
