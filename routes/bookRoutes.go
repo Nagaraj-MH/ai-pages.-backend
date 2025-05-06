@@ -2,6 +2,7 @@ package routes
 
 import (
 	"bookstore/controllers"
+	"bookstore/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,9 +14,13 @@ func BookRoutes(router *gin.RouterGroup) {
 		books.GET("/featured", controllers.GetFeaturedBooks)
 		books.GET("/:id", controllers.GetBookContent)
 		books.POST("/upload", controllers.UploadBook)
-		books.POST("/:id/like", controllers.LikeBook)
-		books.POST("/:id/comment", controllers.AddComment)
 		books.GET("/:id/cover", controllers.GetBookCover)
 		books.GET("/:id/pdf", controllers.GetBookPDF)
+	}
+	protected := router.Group("/auth") // `/api/v1/auth`
+	protected.Use(middlewares.AuthMiddleware())
+	{
+		protected.POST("/:id/like", controllers.LikeBook)
+		protected.POST("/:id/comment", controllers.AddComment)
 	}
 }

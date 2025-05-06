@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"bookstore/constants"
 	"bookstore/utils"
 	"net/http"
 	"strings"
@@ -20,13 +21,13 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
-		_, err := utils.ValidateToken(tokenString)
+		userEmail, err := utils.ValidateToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
-
+		c.Set(string(constants.ContextUserEmailKey), userEmail)
 		c.Next()
 	}
 }
