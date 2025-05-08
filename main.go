@@ -28,6 +28,7 @@ func main() {
 	{
 		routes.AuthRoutes(v1)
 		routes.BookRoutes(v1)
+		routes.UserRoutes(v1)
 	}
 	router.POST("/login", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Login successful"})
